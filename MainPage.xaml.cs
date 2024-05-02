@@ -10,11 +10,15 @@ namespace TestMAUI
         Button[,] gridBtns;
         int availableMirrors = 5;
         GraphicsView graphicsView = new();
+        LaserBeam laserBeam = new LaserBeam();
 
         public MainPage()
         {
             InitializeComponent();
             GenerateGrid(5,5);
+            gridBtns[0, 0].Loaded += (s, e) => { RendererLaser(); };
+            gridBtns[0,0].SizeChanged += (s, e) => { RendererLaser(); };
+            graphicsView.Drawable = laserBeam;
         }
 
         void GenerateGrid(int x, int y)
@@ -38,7 +42,6 @@ namespace TestMAUI
             Random rnd = new Random();
             GridTile startTile = new(rnd.Next(cols), rnd.Next(rows),10 + rnd.Next(4));
             GridTile endTile = new(rnd.Next(cols), rnd.Next(rows),20 + rnd.Next(4));
-
             DataHolder.SetupGrid(cols, rows, startTile, endTile);
         }
 
@@ -68,8 +71,12 @@ namespace TestMAUI
                     gameGrid.Children.Add(button);
                 }
             }
-            gameGrid.Children.Add(graphicsView);
+            graphicsView.HorizontalOptions = LayoutOptions.FillAndExpand;
+            graphicsView.VerticalOptions = LayoutOptions.FillAndExpand;
+            graphicsView.InputTransparent = true;
+            graphicsView.BackgroundColor = Colors.Transparent;
             GridParent.Children.Add(gameGrid);
+            GridParent.Children.Add(graphicsView);
         }
 
         void SetMirror(object? sender, EventArgs e)
@@ -91,11 +98,49 @@ namespace TestMAUI
 
         void RendererLaser()
         {
-
+            var startCoord = FindStart();
+            Button button = gridBtns[startCoord[0], startCoord[1]];
+            laserBeam.StartPoint = new Point(button.Bounds.X + (button.Bounds.Width / 2), button.Bounds.Y + (button.Bounds.Height / 2));
+            int way = DataHolder.DataGrid[startCoord[0], startCoord[1]];
+            if (way >= 20)
+            {
+                way -= 20;
+            }
+            else if (way >= 10)
+            {
+                way -= 10;
+            }
+            int endX = 0;
+            int endY = 0;
+            switch (way)
+            {
+                case 0:
+                    endY = startCoord[1];
+                    break;
+                case 1:
+                    endY = startCoord[1];
+                    break;
+                default:
+                    break;
+            }
+            laserBeam.EndPoint = new Point(endX, endY);
         }
 
+        int[]? FindStart()
+        {
+            for (int i = 0; i < DataHolder.DataGrid.GetLength(1); i++)
+            {
+                for (int j = 0; j < DataHolder.DataGrid.GetLength(0); j++)
+                {
+                    if (DataHolder.DataGrid[j,i] >= 10 && DataHolder.DataGrid[j, i] < 14)
+                    {
+                        return [j,i];
+                    }
+                }
+            }
+            return null;
+        }
     }
-
     public class LaserBeam: IDrawable
     {
         public Point StartPoint { get; set; }
