@@ -1,4 +1,5 @@
 ﻿
+using Microsoft.Maui.Controls;
 using Microsoft.Maui.Graphics;
 using System.Diagnostics;
 
@@ -9,16 +10,25 @@ namespace TestMAUI
         Grid gameGrid;
         Button[,] gridBtns;
         int availableMirrors = 5;
-        GraphicsView graphicsView = new();
-        LaserBeam laserBeam = new LaserBeam();
+        GraphicsView graphicsView;
+        LaserBeam laserBeam;
+        Random random;
+
+        public delegate void SizeCanged();
+
+        public event SizeCanged SizeCangedEvent;
 
         public MainPage()
         {
             InitializeComponent();
+            random = new Random();
             GenerateGrid(5,5);
-            gridBtns[0, 0].Loaded += (s, e) => { RendererLaser(); };
-            gridBtns[0,0].SizeChanged += (s, e) => { RendererLaser(); };
-            graphicsView.Drawable = laserBeam;
+        }
+
+        protected override void OnSizeAllocated(double width, double height)
+        {
+            base.OnSizeAllocated(width, height);
+            SizeCangedEvent?.Invoke();
         }
 
         void GenerateGrid(int x, int y)
@@ -43,6 +53,7 @@ namespace TestMAUI
             GridTile startTile = new(rnd.Next(cols), rnd.Next(rows),10 + rnd.Next(4));
             GridTile endTile = new(rnd.Next(cols), rnd.Next(rows),20 + rnd.Next(4));
             DataHolder.SetupGrid(cols, rows, startTile, endTile);
+            SizeCangedEvent += delegate { RendererLaser(); };
         }
 
         void GenerateView()
@@ -63,6 +74,9 @@ namespace TestMAUI
                     }
                     else
                     {
+                        int x = j;
+                        int y = i;
+                        button.Clicked += delegate { DataHolder.PlaceMirror(x,y,random.Next(1,5)); };
                         button.Clicked += SetMirror;
                     }
                     Grid.SetColumn(button, j);
@@ -71,12 +85,18 @@ namespace TestMAUI
                     gameGrid.Children.Add(button);
                 }
             }
+            graphicsView = new GraphicsView();
             graphicsView.HorizontalOptions = LayoutOptions.FillAndExpand;
             graphicsView.VerticalOptions = LayoutOptions.FillAndExpand;
             graphicsView.InputTransparent = true;
             graphicsView.BackgroundColor = Colors.Transparent;
+            laserBeam = new LaserBeam();
+            graphicsView.Drawable = laserBeam;
+            Grid.SetRow(graphicsView, 1);
+            Grid.SetRow(gameGrid, 1);
             GridParent.Children.Add(gameGrid);
             GridParent.Children.Add(graphicsView);
+            RendererLaser();
         }
 
         void SetMirror(object? sender, EventArgs e)
@@ -93,37 +113,143 @@ namespace TestMAUI
                     availableMirrors--;
                     btn.BackgroundColor = Colors.White;
                 }
+                RendererLaser();
             }
+        }
+
+        void Restart(object? sender, EventArgs e)
+        {
+            graphicsView.Drawable = null;
+            availableMirrors = 5;
+            GenerateGrid(5, 5);
         }
 
         void RendererLaser()
         {
-            var startCoord = FindStart();
-            Button button = gridBtns[startCoord[0], startCoord[1]];
-            laserBeam.StartPoint = new Point(button.Bounds.X + (button.Bounds.Width / 2), button.Bounds.Y + (button.Bounds.Height / 2));
-            int way = DataHolder.DataGrid[startCoord[0], startCoord[1]];
-            if (way >= 20)
+            List<Point[]> points = new();
+            int[]? startCoord = FindStart();
+            do
             {
-                way -= 20;
-            }
-            else if (way >= 10)
-            {
-                way -= 10;
-            }
-            int endX = 0;
-            int endY = 0;
-            switch (way)
-            {
-                case 0:
-                    endY = startCoord[1];
-                    break;
-                case 1:
-                    endY = startCoord[1];
-                    break;
-                default:
-                    break;
-            }
-            laserBeam.EndPoint = new Point(endX, endY);
+                List<Point> start = new List<Point>();
+                Button startButton = gridBtns[startCoord[0], startCoord[1]];
+                start.Add(new Point(startButton.Bounds.X + (startButton.Bounds.Width / 2), startButton.Bounds.Y + (startButton.Bounds.Height / 2)));
+                int way = DataHolder.DataGrid[startCoord[0], startCoord[1]];
+                if (way >= 20)
+                {
+                    way -= 20;
+                }
+                else if (way >= 10)
+                {
+                    way -= 10;
+                }
+                double? endX = null;
+                double? endY = null;
+                switch (way)
+                {
+                    case 0:
+                        for (int y = startCoord[1] - 1; y >= 0; y--)
+                        {
+                            if (DataHolder.DataGrid[startCoord[0], y] > 0 && DataHolder.DataGrid[startCoord[0], y] < 5)
+                            { 
+                                endX = gridBtns[startCoord[0], y].Bounds.X + (startButton.Bounds.Width / 2);
+                                endY = gridBtns[startCoord[0], y].Bounds.Y + (startButton.Bounds.Height / 2);
+                                int prevX = startCoord[0];
+                                startCoord = new int[] { prevX, y };
+                                break;
+                            }
+                        }
+                        if (endX == null ||  endY == null)
+                        {
+                            endY = 0;
+                            endX = startButton.Bounds.X + (startButton.Bounds.Width / 2);
+                            startCoord = null;
+                        }
+                        break;
+                    case 1:
+                        for (int x = startCoord[0] + 1; x < DataHolder.DataGrid.GetLength(0); x++)
+                        {
+                            if (DataHolder.DataGrid[x, startCoord[1]] > 0 && DataHolder.DataGrid[x, startCoord[1]] < 5)
+                            {
+                                endX = gridBtns[x, startCoord[1]].Bounds.X + (startButton.Bounds.Width / 2);
+                                endY = gridBtns[x, startCoord[1]].Bounds.Y + (startButton.Bounds.Height / 2);
+                                int prevY = startCoord[1];
+                                startCoord = new int[] { x, prevY };
+                                break;
+                            }
+                        }
+                        if (endX == null || endY == null)
+                        {
+                            endX = gridBtns[gridBtns.GetLength(0) - 1, startCoord[1]].Bounds.X + (startButton.Bounds.Width);
+                            endY = startButton.Bounds.Y + (startButton.Bounds.Height / 2);
+                            startCoord = null;
+                        }
+                        break;
+                    case 2:
+                        for (int y = startCoord[1] + 1; y < DataHolder.DataGrid.GetLength(1); y++)
+                        {
+                            if (DataHolder.DataGrid[startCoord[0], y] > 0 && DataHolder.DataGrid[startCoord[0], y] < 5)
+                            {
+                                endX = gridBtns[startCoord[0], y].Bounds.X + (startButton.Bounds.Width / 2);
+                                endY = gridBtns[startCoord[0], y].Bounds.Y + (startButton.Bounds.Height / 2);
+                                int prevX = startCoord[0];
+                                startCoord = new int[] { prevX, y };
+                                break;
+                            }
+                        }
+                        if (endX == null || endY == null)
+                        {
+                            endY = gridBtns[startCoord[0], gridBtns.GetLength(1) - 1].Bounds.Y + gridBtns[startCoord[0], gridBtns.GetLength(1) - 1].Bounds.Height;
+                            endX = startButton.Bounds.X + (startButton.Bounds.Width / 2);
+                            startCoord = null;
+                        }
+                        break;
+                    case 3:
+                        for (int x = startCoord[0] - 1; x >= 0; x--)
+                        {
+                            if (DataHolder.DataGrid[x, startCoord[1]] > 0 && DataHolder.DataGrid[x, startCoord[1]] < 5)
+                            {
+                                endX = gridBtns[x, startCoord[1]].Bounds.X + (startButton.Bounds.Width / 2);
+                                endY = gridBtns[x, startCoord[1]].Bounds.Y + (startButton.Bounds.Height / 2);
+                                int prevY = startCoord[1];
+                                startCoord = new int[] { x, prevY };
+                                break;
+                            }
+                        }
+                        if (endX == null || endY == null)
+                        {
+                            endX = 0;
+                            endY = startButton.Bounds.Y + (startButton.Bounds.Height / 2);
+                            startCoord = null;
+                        }
+                        break;
+                    case 4:
+                        for (int y = startCoord[1] - 1; y >= 0; y--)
+                        {
+                            if (DataHolder.DataGrid[startCoord[0], y] > 0 && DataHolder.DataGrid[startCoord[0], y] < 5)
+                            {
+                                endX = gridBtns[startCoord[0], y].Bounds.X + (startButton.Bounds.Width / 2);
+                                endY = gridBtns[startCoord[0], y].Bounds.Y + (startButton.Bounds.Height / 2);
+                                int prevX = startCoord[0];
+                                startCoord = new int[] { prevX, y };
+                                break;
+                            }
+                        }
+                        if (endX == null || endY == null)
+                        {
+                            endY = 0;
+                            endX = startButton.Bounds.X + (startButton.Bounds.Width / 2);
+                            startCoord = null;
+                        }
+                        break;
+                    default:
+                        startCoord = null;
+                        break;
+                }
+                start.Add(new Point(endX??0, endY??0));
+                points.Add(start.ToArray());
+            } while (startCoord != null);
+            laserBeam.Points = points;
+            graphicsView.Invalidate();
         }
 
         int[]? FindStart()
@@ -143,16 +269,18 @@ namespace TestMAUI
     }
     public class LaserBeam: IDrawable
     {
-        public Point StartPoint { get; set; }
-        public Point EndPoint { get; set; }
+        public List<Point[]> Points { get; set; }
 
         public void Draw(ICanvas canvas, RectF dirtyRect)
         {
-            canvas.StrokeColor = Colors.OrangeRed;
-            canvas.StrokeSize = 5f;
-            canvas.Antialias = true;
+            for (int i = 0; i < Points.Count; i++)
+            {
+                canvas.StrokeColor = Colors.Red;
+                canvas.StrokeSize = 5f;
+                canvas.Antialias = true;
 
-            canvas.DrawLine((float)StartPoint.X, (float)StartPoint.Y, (float)EndPoint.X, (float)EndPoint.Y);
+                canvas.DrawLine((float)Points[i][0].X, (float)Points[i][0].Y, (float)Points[i][1].X, (float)Points[i][1].Y);
+            }
         }
     }
 

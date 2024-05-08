@@ -16,6 +16,11 @@ namespace TestMAUI
             DataGrid[start.X,start.Y] = start.Value;
             DataGrid[end.X,end.Y] = end.Value;
         }
+
+        public static void PlaceMirror(int x, int y, int r)
+        {
+            DataGrid[x,y] = r;
+        }
     }
 
     public class GridTile

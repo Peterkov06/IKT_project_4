@@ -4,6 +4,10 @@
              x:Class="TestMAUI.MainPage">
 
         <Grid x:Name="GridParent">
-
+            <Grid.RowDefinitions>
+            <RowDefinition Height="1*"></RowDefinition>
+            <RowDefinition Height="10*"></RowDefinition>
+            </Grid.RowDefinitions>
+        <Button Grid.Row="0" Margin="5" Text="Restart" Clicked="Restart"></Button>
         </Grid>
 </ContentPage>
