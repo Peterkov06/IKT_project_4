@@ -49,11 +49,48 @@ namespace TestMAUI
 
         void SetStartAndEnd(int cols, int rows)
         {
-            Random rnd = new Random();
-            GridTile startTile = new(rnd.Next(cols), rnd.Next(rows),10 + rnd.Next(4));
-            GridTile endTile = new(rnd.Next(cols), rnd.Next(rows),20 + rnd.Next(4));
+            GridTile startTile = SelectCoordsOnTable(cols,rows, 10);
+            GridTile endTile = SelectCoordsOnTable(cols,rows, 20);
             DataHolder.SetupGrid(cols, rows, startTile, endTile);
             SizeCangedEvent += delegate { RendererLaser(); };
+        }
+
+        void AddRestrictions(int laserWay, int cols, int rows, ref List<int> noX, ref List<int> noY)
+        {
+            noX.Clear();
+            noY.Clear();
+            switch (laserWay)
+            {
+                case 0:
+                    noY.Add(0);
+                    break;
+                case 1:
+                    noX.Add(cols - 1);
+                    break;
+                case 2:
+                    noY.Add(rows - 1);
+                    break;
+                case 3:
+                    noX.Add(0);
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        GridTile SelectCoordsOnTable(int cols, int rows, int startVal)
+        {
+            int laserWay = random.Next(0, 4);
+            List<int> noX = new List<int>();
+            List<int> noY = new List<int>();
+            AddRestrictions(laserWay, cols, rows, ref noX, ref noY);
+            int X, Y;
+            do
+            {
+                X = random.Next(cols);
+                Y = random.Next(rows);
+            } while (noX.Contains(X) || noY.Contains(Y));
+            return new(X, Y, laserWay + startVal);
         }
 
         void GenerateView()
