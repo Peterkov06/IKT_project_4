@@ -3,11 +3,20 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="TestMAUI.MainPage">
 
-        <Grid x:Name="GridParent">
+        <Grid>
             <Grid.RowDefinitions>
-            <RowDefinition Height="1*"></RowDefinition>
-            <RowDefinition Height="10*"></RowDefinition>
+                <RowDefinition Height="1*"></RowDefinition>
             </Grid.RowDefinitions>
-        <Button Grid.Row="0" Margin="5" Text="Restart" Clicked="Restart"></Button>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="8*"></ColumnDefinition>
+                <ColumnDefinition Width="2*"></ColumnDefinition>
+            </Grid.ColumnDefinitions>
+        <StackLayout Grid.Row="0" Grid.Column="2" >
+            <Button Margin="5" Text="Restart" Clicked="Restart"></Button>
+            <Label x:Name="MirrorNumLbl" Text="Used Mirrors: 0"></Label>
+        </StackLayout>
+        <Grid x:Name="GridParent" Grid.Row="0" Grid.Column="0">
+            
+        </Grid>
         </Grid>
 </ContentPage>

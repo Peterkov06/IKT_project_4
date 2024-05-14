@@ -9,7 +9,8 @@ namespace TestMAUI
     {
         Grid gameGrid;
         Button[,] gridBtns;
-        int availableMirrors = 5;
+        int usedMirrors = 0;
+        int selectedWay = 1;
         GraphicsView graphicsView;
         LaserBeam laserBeam;
         Random random;
@@ -118,10 +119,15 @@ namespace TestMAUI
                             if (button.BackgroundColor == Colors.White)
                             {
                                 DataHolder.PlaceMirror(x, y, 0);
+                                selectedWay++;
                             }
                             else
                             {
-                                DataHolder.PlaceMirror(x,y,random.Next(1,5)); 
+                                DataHolder.PlaceMirror(x,y,selectedWay); 
+                            }
+                            if (selectedWay > 4)
+                            {
+                                selectedWay = 1;
                             }
                         };
                         button.Clicked += SetMirror;
@@ -139,8 +145,6 @@ namespace TestMAUI
             graphicsView.BackgroundColor = Colors.Transparent;
             laserBeam = new LaserBeam();
             graphicsView.Drawable = laserBeam;
-            Grid.SetRow(graphicsView, 1);
-            Grid.SetRow(gameGrid, 1);
             GridParent.Children.Add(gameGrid);
             GridParent.Children.Add(graphicsView);
             RendererLaser();
@@ -152,22 +156,24 @@ namespace TestMAUI
             {
                 if (btn.BackgroundColor == Colors.White)
                 {
-                    availableMirrors++;
+                    usedMirrors--;
                     btn.BackgroundColor = Color.FromArgb("#ac99ea");
                 }
-                else if (availableMirrors > 0)
+                else
                 {
-                    availableMirrors--;
+                    usedMirrors++;
                     btn.BackgroundColor = Colors.White;
                 }
                 RendererLaser();
+                UpdateMirrorLabel();
             }
         }
 
         void Restart(object? sender, EventArgs e)
         {
             graphicsView.Drawable = null;
-            availableMirrors = 5;
+            usedMirrors = 0;
+            UpdateMirrorLabel();
             GenerateGrid(5, 5);
         }
 
@@ -184,8 +190,6 @@ namespace TestMAUI
                 start.Add(new Point(startButton.Bounds.X + (startButton.Bounds.Width / 2), startButton.Bounds.Y + (startButton.Bounds.Height / 2)));
                 int way = DataHolder.DataGrid[startCoord[0], startCoord[1]];
                 prevStartCoords.Add([startCoord[0], startCoord[1]]);
-                Debug.WriteLine($"Prev starts: {prevStartCoords.Count}");
-                Debug.WriteLine($"StartCoord: {startCoord[0]} {startCoord[1]}, value: {way}");
                 if (way >= 20)
                 {
                     way -= 20;
@@ -201,7 +205,6 @@ namespace TestMAUI
                     case 0:
                         for (int y = startCoord[1] - 1; y >= 0; y--)
                         {
-                            Debug.WriteLine($"Value: {DataHolder.DataGrid[startCoord[0], y]}");
                             if (DataHolder.DataGrid[startCoord[0], y] > 0 && DataHolder.DataGrid[startCoord[0], y] < 5)
                             { 
                                 endX = gridBtns[startCoord[0], y].Bounds.X + (startButton.Bounds.Width / 2);
@@ -242,12 +245,12 @@ namespace TestMAUI
                                         finalWay = 2;
                                         break;
                                 }
-                                Debug.WriteLine($"Finaly way: {finalWay}, way: {way}");
                                 if (way == finalWay)
                                 {
                                     endX = gridBtns[startCoord[0], y].Bounds.X + (startButton.Bounds.Width / 2);
                                     endY = gridBtns[startCoord[0], y].Bounds.Y + (startButton.Bounds.Height / 2);
                                     startCoord = null;
+                                    EndDialogue();
                                 }
                                 break;
                             }
@@ -262,7 +265,6 @@ namespace TestMAUI
                     case 1:
                         for (int x = startCoord[0] + 1; x < DataHolder.DataGrid.GetLength(0); x++)
                         {
-                            Debug.WriteLine($"Value: {DataHolder.DataGrid[x, startCoord[1]]}");
                             if (DataHolder.DataGrid[x, startCoord[1]] > 0 && DataHolder.DataGrid[x, startCoord[1]] < 5)
                             {
                                 endX = gridBtns[x, startCoord[1]].Bounds.X + (startButton.Bounds.Width / 2);
@@ -303,12 +305,12 @@ namespace TestMAUI
                                         finalWay = 2;
                                         break;
                                 }
-                                Debug.WriteLine($"Finaly way: {finalWay}, way: {way}");
                                 if (way == finalWay)
                                 {
                                     endX = gridBtns[x, startCoord[1]].Bounds.X + (startButton.Bounds.Width / 2);
                                     endY = gridBtns[x, startCoord[1]].Bounds.Y + (startButton.Bounds.Height / 2);
                                     startCoord = null;
+                                    EndDialogue();
                                 }
                                 break;
                             }
@@ -323,7 +325,6 @@ namespace TestMAUI
                     case 2:
                         for (int y = startCoord[1] + 1; y < DataHolder.DataGrid.GetLength(1); y++)
                         {
-                            Debug.WriteLine($"Value: {DataHolder.DataGrid[startCoord[0], y]}");
                             if (DataHolder.DataGrid[startCoord[0], y] > 0 && DataHolder.DataGrid[startCoord[0], y] < 5)
                             {
                                 endX = gridBtns[startCoord[0], y].Bounds.X + (startButton.Bounds.Width / 2);
@@ -364,12 +365,12 @@ namespace TestMAUI
                                         finalWay = 2;
                                         break;
                                 }
-                                Debug.WriteLine($"Finaly way: {finalWay}, way: {way}");
                                 if (way == finalWay)
                                 {
                                     endX = gridBtns[startCoord[0], y].Bounds.X + (startButton.Bounds.Width / 2);
                                     endY = gridBtns[startCoord[0], y].Bounds.Y + (startButton.Bounds.Height / 2);
                                     startCoord = null;
+                                    EndDialogue();
                                 }
                                 break;
                             }
@@ -384,7 +385,6 @@ namespace TestMAUI
                     case 3:
                         for (int x = startCoord[0] - 1; x >= 0; x--)
                         {
-                            Debug.WriteLine($"Value: {DataHolder.DataGrid[x, startCoord[1]]}");
                             if (DataHolder.DataGrid[x, startCoord[1]] > 0 && DataHolder.DataGrid[x, startCoord[1]] < 5)
                             {
                                 endX = gridBtns[x, startCoord[1]].Bounds.X + (startButton.Bounds.Width / 2);
@@ -425,12 +425,12 @@ namespace TestMAUI
                                         finalWay = 2;
                                         break;
                                 }
-                                Debug.WriteLine($"Finaly way: {finalWay}, way: {way}");
                                 if (way == finalWay)
                                 {
                                     endX = gridBtns[x, startCoord[1]].Bounds.X + (startButton.Bounds.Width / 2);
                                     endY = gridBtns[x, startCoord[1]].Bounds.Y + (startButton.Bounds.Height / 2);
                                     startCoord = null;
+                                    EndDialogue();
                                 }
                                 break;
                             }
@@ -445,7 +445,6 @@ namespace TestMAUI
                     case 4:
                         for (int y = startCoord[1] - 1; y >= 0; y--)
                         {
-                            Debug.WriteLine($"Value: {DataHolder.DataGrid[startCoord[0], y]}");
                             if (DataHolder.DataGrid[startCoord[0], y] > 0 && DataHolder.DataGrid[startCoord[0], y] < 5)
                             {
                                 endX = gridBtns[startCoord[0], y].Bounds.X + (startButton.Bounds.Width / 2);
@@ -486,11 +485,11 @@ namespace TestMAUI
                                         finalWay = 2;
                                         break;
                                 }
-                                Debug.WriteLine($"Finaly way: {finalWay}, way: {way}");
                                 if (way == finalWay)
                                 {
                                     endX = gridBtns[startCoord[0], y].Bounds.X + (startButton.Bounds.Width / 2);
                                     endY = gridBtns[startCoord[0], y].Bounds.Y + (startButton.Bounds.Height / 2);
+                                    EndDialogue();
                                     startCoord = null;
                                 }
                                 break;
@@ -507,7 +506,6 @@ namespace TestMAUI
                         startCoord = null;
                         break;
                 }
-                Debug.WriteLine($"EndCoord: {endX} {endY}");
                 start.Add(new Point(endX??0, endY??0));
                 points.Add(start.ToArray());
             } while (startCoord != null && !ContainsStart(startCoord[0], startCoord[1], prevStartCoords));
@@ -552,6 +550,21 @@ namespace TestMAUI
             }
             return null;
         }
+
+        async void EndDialogue()
+        {
+            bool answer = await DisplayAlert("Challange Complete!", "Would you like to play a new one?", "Yes", "No" );
+            if (answer)
+            {
+                Restart(this, null);
+            }
+        }
+
+        void UpdateMirrorLabel()
+        {
+            MirrorNumLbl.Text = $"Used mirrors: {usedMirrors}";
+        }
+
     }
     public class LaserBeam: IDrawable
     {
