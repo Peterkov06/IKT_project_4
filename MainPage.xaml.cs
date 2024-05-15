@@ -45,6 +45,7 @@ namespace TestMAUI
                 gameGrid.RowDefinitions.Add(new RowDefinition());
             }
             SetStartAndEnd(x,y);
+            SetBarriers();
             GenerateView();
         }
 
@@ -54,6 +55,67 @@ namespace TestMAUI
             GridTile endTile = SelectCoordsOnTable(cols,rows, 20);
             DataHolder.SetupGrid(cols, rows, startTile, endTile);
             SizeCangedEvent += delegate { RendererLaser(); };
+        }
+
+        void SetBarriers()
+        {
+            int barrierNum = random.Next(0, Convert.ToInt32(Math.Round((decimal)(DataHolder.DataGrid.Length / 3))));
+            int xLength = DataHolder.DataGrid.GetLength(0);
+            int yLength = DataHolder.DataGrid.GetLength(1);
+            for (int i = 0;i < barrierNum;i++)
+            {
+                int x, y;
+                GridTile firstL = FirstLaserTile(), lastL = LastLaserTile();
+                int[] start = FindStart(), end = FindEnd();
+                Debug.Write($"{end[0]}, {end[1]} \n");
+                Debug.Write($"{start[0]}, {start[1]}\n");
+                Debug.Write($"{firstL.X}, {firstL.Y}\n");
+                Debug.Write($"{lastL.X}, {lastL.Y}\n");
+                do
+                {
+                    x = random.Next(0, xLength);
+                    y = random.Next(0, yLength);
+                } while (DataHolder.DataGrid[x,y] != 0 && ((x == firstL.X && y == firstL.Y) || ((x == lastL.X && y == lastL.Y))) && ((x == start[0] && y == start[1]) || ((x == end[0] && y == end[1]))));
+                DataHolder.DataGrid[x,y] = -1;
+            }
+        }
+
+        GridTile FirstLaserTile()
+        {
+            int[] first = FindStart();
+            int way = DataHolder.DataGrid[first[0], first[1]];
+            switch (way)
+            {
+                case 10:
+                    return new GridTile(first[0], first[1] - 1, 0);
+                case 11:
+                    return new GridTile(first[0] + 1, first[1], 0);
+                case 12:
+                    return new GridTile(first[0], first[1] + 1, 0);
+                case 13:
+                    return new GridTile(first[0] - 1, first[1], 0);
+                default:
+                    return new (0,0,0);
+            }
+        }
+
+        GridTile LastLaserTile()
+        {
+            int[] first = FindEnd();
+            int way = DataHolder.DataGrid[first[0], first[1]];
+            switch (way)
+            {
+                case 20:
+                    return new GridTile(first[0], first[1] + 1, 0);
+                case 21:
+                    return new GridTile(first[0] + 1, first[1], 0);
+                case 22:
+                    return new GridTile(first[0], first[1] - 1, 0);
+                case 23:
+                    return new GridTile(first[0] - 1, first[1], 0);
+                default:
+                    return new(0, 0, 0);
+            }
         }
 
         void AddRestrictions(int laserWay, int cols, int rows, ref List<int> noX, ref List<int> noY)
@@ -101,16 +163,8 @@ namespace TestMAUI
                 for (int j = 0; j < DataHolder.DataGrid.GetLength(0); j++)
                 {
                     int value = DataHolder.DataGrid[j,i];
-                    Button button = new Button() { Text = $"{j + 1};{i + 1}: {value}", Margin = new Thickness(5) };
-                    if (value >= 10 && value < 14)
-                    {
-                        button.BackgroundColor = Colors.Green;
-                    }
-                    else if (value >= 20 && value < 24)
-                    {
-                        button.BackgroundColor = Colors.Red;
-                    }
-                    else
+                    Button button = new Button() { Text = $"{j + 1};{i + 1}: {value}", Margin = new Thickness(5) };                   
+                    if (value == 0)
                     {
                         int x = j;
                         int y = i;
@@ -131,6 +185,18 @@ namespace TestMAUI
                             }
                         };
                         button.Clicked += SetMirror;
+                    }
+                    else if (value >= 10 && value < 14)
+                    {
+                        button.BackgroundColor = Colors.Green;
+                    }
+                    else if (value >= 20 && value < 24)
+                    {
+                        button.BackgroundColor = Colors.Red;
+                    }
+                    else if (value == -1)
+                    {
+                        button.BackgroundColor = Colors.Gray;
                     }
                     Grid.SetColumn(button, j);
                     Grid.SetRow(button, i);
@@ -205,7 +271,7 @@ namespace TestMAUI
                     case 0:
                         for (int y = startCoord[1] - 1; y >= 0; y--)
                         {
-                            if (DataHolder.DataGrid[startCoord[0], y] > 0 && DataHolder.DataGrid[startCoord[0], y] < 5)
+                            if (DataHolder.DataGrid[startCoord[0], y] > 0 && DataHolder.DataGrid[startCoord[0], y] < 4)
                             { 
                                 endX = gridBtns[startCoord[0], y].Bounds.X + (startButton.Bounds.Width / 2);
                                 endY = gridBtns[startCoord[0], y].Bounds.Y + (startButton.Bounds.Height / 2);
@@ -254,6 +320,13 @@ namespace TestMAUI
                                 }
                                 break;
                             }
+                            else if (DataHolder.DataGrid[startCoord[0], y] != 0)
+                            {
+                                endX = gridBtns[startCoord[0], y].Bounds.X + (startButton.Bounds.Width / 2);
+                                endY = gridBtns[startCoord[0], y].Bounds.Y + (startButton.Bounds.Height / 2);
+                                startCoord = null;
+                                break;
+                            }
                         }
                         if (endX == null ||  endY == null)
                         { 
@@ -265,7 +338,7 @@ namespace TestMAUI
                     case 1:
                         for (int x = startCoord[0] + 1; x < DataHolder.DataGrid.GetLength(0); x++)
                         {
-                            if (DataHolder.DataGrid[x, startCoord[1]] > 0 && DataHolder.DataGrid[x, startCoord[1]] < 5)
+                            if (DataHolder.DataGrid[x, startCoord[1]] > 1 && DataHolder.DataGrid[x, startCoord[1]] < 5 )
                             {
                                 endX = gridBtns[x, startCoord[1]].Bounds.X + (startButton.Bounds.Width / 2);
                                 endY = gridBtns[x, startCoord[1]].Bounds.Y + (startButton.Bounds.Height / 2);
@@ -312,6 +385,13 @@ namespace TestMAUI
                                     startCoord = null;
                                     EndDialogue();
                                 }
+                                break;
+                            }
+                            else if (DataHolder.DataGrid[x, startCoord[1]] != 0)
+                            {
+                                endX = gridBtns[x, startCoord[1]].Bounds.X + (startButton.Bounds.Width / 2);
+                                endY = gridBtns[x, startCoord[1]].Bounds.Y + (startButton.Bounds.Height / 2);
+                                startCoord = null;
                                 break;
                             }
                         }
@@ -325,7 +405,7 @@ namespace TestMAUI
                     case 2:
                         for (int y = startCoord[1] + 1; y < DataHolder.DataGrid.GetLength(1); y++)
                         {
-                            if (DataHolder.DataGrid[startCoord[0], y] > 0 && DataHolder.DataGrid[startCoord[0], y] < 5)
+                            if (DataHolder.DataGrid[startCoord[0], y] > 0 && DataHolder.DataGrid[startCoord[0], y] < 5 && DataHolder.DataGrid[startCoord[0], y] != 2)
                             {
                                 endX = gridBtns[startCoord[0], y].Bounds.X + (startButton.Bounds.Width / 2);
                                 endY = gridBtns[startCoord[0], y].Bounds.Y + (startButton.Bounds.Height / 2);
@@ -374,6 +454,13 @@ namespace TestMAUI
                                 }
                                 break;
                             }
+                            else if (DataHolder.DataGrid[startCoord[0], y] != 0)
+                            {
+                                endX = gridBtns[startCoord[0], y].Bounds.X + (startButton.Bounds.Width / 2);
+                                endY = gridBtns[startCoord[0], y].Bounds.Y + (startButton.Bounds.Height / 2);
+                                startCoord = null;
+                                break;
+                            }
                         }
                         if (endX == null || endY == null)
                         {
@@ -385,7 +472,7 @@ namespace TestMAUI
                     case 3:
                         for (int x = startCoord[0] - 1; x >= 0; x--)
                         {
-                            if (DataHolder.DataGrid[x, startCoord[1]] > 0 && DataHolder.DataGrid[x, startCoord[1]] < 5)
+                            if (DataHolder.DataGrid[x, startCoord[1]] > 0 && DataHolder.DataGrid[x, startCoord[1]] < 5 && DataHolder.DataGrid[x, startCoord[1]] != 3)
                             {
                                 endX = gridBtns[x, startCoord[1]].Bounds.X + (startButton.Bounds.Width / 2);
                                 endY = gridBtns[x, startCoord[1]].Bounds.Y + (startButton.Bounds.Height / 2);
@@ -434,6 +521,13 @@ namespace TestMAUI
                                 }
                                 break;
                             }
+                            else if (DataHolder.DataGrid[x, startCoord[1]] != 0)
+                            {
+                                endX = gridBtns[x, startCoord[1]].Bounds.X + (startButton.Bounds.Width / 2);
+                                endY = gridBtns[x, startCoord[1]].Bounds.Y + (startButton.Bounds.Height / 2);
+                                startCoord = null;
+                                break;
+                            }
                         }
                         if (endX == null || endY == null)
                         {
@@ -445,7 +539,7 @@ namespace TestMAUI
                     case 4:
                         for (int y = startCoord[1] - 1; y >= 0; y--)
                         {
-                            if (DataHolder.DataGrid[startCoord[0], y] > 0 && DataHolder.DataGrid[startCoord[0], y] < 5)
+                            if (DataHolder.DataGrid[startCoord[0], y] > 0 && DataHolder.DataGrid[startCoord[0], y] < 4)
                             {
                                 endX = gridBtns[startCoord[0], y].Bounds.X + (startButton.Bounds.Width / 2);
                                 endY = gridBtns[startCoord[0], y].Bounds.Y + (startButton.Bounds.Height / 2);
@@ -492,6 +586,13 @@ namespace TestMAUI
                                     EndDialogue();
                                     startCoord = null;
                                 }
+                                break;
+                            }
+                            else if (DataHolder.DataGrid[startCoord[0], y] != 0)
+                            {
+                                endX = gridBtns[startCoord[0], y].Bounds.X + (startButton.Bounds.Width / 2);
+                                endY = gridBtns[startCoord[0], y].Bounds.Y + (startButton.Bounds.Height / 2);
+                                startCoord = null;
                                 break;
                             }
                         }
@@ -522,7 +623,7 @@ namespace TestMAUI
             return false;
         }
 
-        int[]? FindStart()
+        int[] FindStart()
         {
             for (int i = 0; i < DataHolder.DataGrid.GetLength(1); i++)
             {
@@ -534,9 +635,9 @@ namespace TestMAUI
                     }
                 }
             }
-            return null;
+            throw new Exception($"NO START y: {DataHolder.DataGrid.GetLength(1)} x: {DataHolder.DataGrid.GetLength(0)}");
         }
-        int[]? FindEnd()
+        int[] FindEnd()
         {
             for (int i = 0; i < DataHolder.DataGrid.GetLength(1); i++)
             {
@@ -548,7 +649,7 @@ namespace TestMAUI
                     }
                 }
             }
-            return null;
+            throw new Exception($"NO End y: {DataHolder.DataGrid.GetLength(1)} x: {DataHolder.DataGrid.GetLength(0)}");
         }
 
         async void EndDialogue()
