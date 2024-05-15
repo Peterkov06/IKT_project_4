@@ -51,8 +51,13 @@ namespace TestMAUI
 
         void SetStartAndEnd(int cols, int rows)
         {
-            GridTile startTile = SelectCoordsOnTable(cols,rows, 10);
-            GridTile endTile = SelectCoordsOnTable(cols,rows, 20);
+            GridTile endTile;
+            GridTile startTile;
+            do
+            {
+                startTile = SelectCoordsOnTable(cols, rows, 10);
+                endTile = SelectCoordsOnTable(cols, rows, 20);
+            } while (startTile.X == endTile.X && startTile.Y == endTile.Y);         
             DataHolder.SetupGrid(cols, rows, startTile, endTile);
             SizeCangedEvent += delegate { RendererLaser(); };
         }
@@ -67,15 +72,13 @@ namespace TestMAUI
                 int x, y;
                 GridTile firstL = FirstLaserTile(), lastL = LastLaserTile();
                 int[] start = FindStart(), end = FindEnd();
-                Debug.Write($"{end[0]}, {end[1]} \n");
-                Debug.Write($"{start[0]}, {start[1]}\n");
-                Debug.Write($"{firstL.X}, {firstL.Y}\n");
-                Debug.Write($"{lastL.X}, {lastL.Y}\n");
+                Debug.Write($"StartL {firstL.X}, {firstL.Y}\n");
+                Debug.Write($"EndL {lastL.X}, {lastL.Y}\n");
                 do
                 {
                     x = random.Next(0, xLength);
                     y = random.Next(0, yLength);
-                } while (DataHolder.DataGrid[x,y] != 0 && ((x == firstL.X && y == firstL.Y) || ((x == lastL.X && y == lastL.Y))) && ((x == start[0] && y == start[1]) || ((x == end[0] && y == end[1]))));
+                } while (DataHolder.DataGrid[x,y] != 0 && ((x == start[0] && y == start[1]) || ((x == end[0] && y == end[1]))) || ((x == firstL.X && y == firstL.Y) || ((x == lastL.X && y == lastL.Y))));
                 DataHolder.DataGrid[x,y] = -1;
             }
         }
@@ -106,11 +109,11 @@ namespace TestMAUI
             switch (way)
             {
                 case 20:
-                    return new GridTile(first[0], first[1] + 1, 0);
+                    return new GridTile(first[0], first[1] - 1, 0);
                 case 21:
                     return new GridTile(first[0] + 1, first[1], 0);
                 case 22:
-                    return new GridTile(first[0], first[1] - 1, 0);
+                    return new GridTile(first[0], first[1] + 1, 0);
                 case 23:
                     return new GridTile(first[0] - 1, first[1], 0);
                 default:
